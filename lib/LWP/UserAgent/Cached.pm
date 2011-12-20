@@ -1,9 +1,12 @@
 package LWP::UserAgent::Cached;
 
 use strict;
+use Carp;
 use Digest::MD5;
 use HTTP::Response;
 use base 'LWP::UserAgent';
+
+our $VERSION = '0.01';
 
 sub new {
 	my ($class, %opts) = @_;
@@ -11,6 +14,8 @@ sub new {
 	my $cache_dir = delete $opts{cache_dir};
 	my $self = $class->SUPER::new(%opts);
 	$self->{cache_dir} = $cache_dir;
+	
+	return $self;
 }
 
 sub cache_dir {
@@ -32,21 +37,32 @@ sub simple_request {
 	
 	my ($request, $content_handler, $read_size_hint) = @_;
 	my $fpath = $self->{cache_dir} . '/' . Digest::MD5::md5_hex($request->as_string);
+	my $response;
 	
 	if (-e $fpath) {
-		open my $fh, $fpath; # XXX error checking
-		local $/ = undef;
-		my $response_str = <$fh>;
-		close $fh;
-		my $response = HTTP::Response->parse($fpath);
-		$response->request($request);
-		return $response;
+		if (open my $fh, $fpath) {
+			local $/ = undef;
+			my $response_str = <$fh>;
+			close $fh;
+			$response = HTTP::Response->parse($response_str);
+			$response->request( $self->prepare_request($request) );
+		}
+		else {
+			carp "open('$fpath', 'r'): $!";
+		}
 	}
 	
-	open my $fh, '>', $fpath; # XXX error checking
-	my $response = $self->SUPER::simple_request(@_);
-	print $fh $response->as_string;
-	close $fh;
+	unless ($response) {
+		$response = $self->SUPER::simple_request(@_);
+		if (open my $fh, '>', $fpath) {
+			print $fh $response->as_string;
+			close $fh;
+		}
+		else {
+			carp "open('$fpath', 'w'): $!";
+		}
+	}
+	
 	return $response;
 }
 
