@@ -49,24 +49,29 @@ sub simple_request {
 		return $self->SUPER::simple_request(@_);
 	}
 	
-	my $request = $_[0];
+	my $request = $_[0]; 
+	eval{ $self->prepare_request($request) };
 	my $fpath = $self->{cache_dir} . '/' . Digest::MD5::md5_hex($request->as_string);
 	my $response;
+	my $no_collision_suffix;
 	
 	if (-e $fpath) {
-		if (open my $fh, $fpath) {
-			local $/ = undef;
-			my $response_str = <$fh>;
-			close $fh;
-			$response = HTTP::Response->parse($response_str);
-			$response->request( eval{$self->prepare_request($request)} || $request );
-			
-			if ($self->cookie_jar) {
-				$self->cookie_jar->extract_cookies($response);
+		unless ($response = _parse_response($fpath, $request)) {
+			# collision
+			if (my @cache_list = <$fpath-*>) {
+				foreach my $cache_file (@cache_list) {
+					if ($response = $self->_parse_cached_response($cache_file, $request)) {
+						last;
+					}
+				}
+				
+				unless ($response) {
+					$no_collision_suffix = sprintf('-%03d', substr($cache_list[-1], -3) + 1);
+				}
 			}
-		}
-		else {
-			carp "open('$fpath', 'r'): $!";
+			else {
+				$no_collision_suffix = '-001';
+			}
 		}
 	}
 	
@@ -74,7 +79,12 @@ sub simple_request {
 		$response = $self->SUPER::simple_request(@_);
 		
 		if (!defined($self->{nocache}) || ref($self->{nocache}) ne 'CODE' || !$self->{nocache}->($response)) {
-			if (open my $fh, '>', $fpath) {
+			if (defined $no_collision_suffix) {
+				$fpath .= $no_collision_suffix;
+			}
+			
+			if (open my $fh, '>:raw', $fpath) {
+				print $fh $request->url, "\n";
 				print $fh $response->as_string;
 				close $fh;
 				
@@ -98,6 +108,36 @@ sub uncache {
 	if (exists $self->{last_cached}) {
 		unlink $_ for @{$self->{last_cached}};
 	}
+}
+
+sub _parse_cached_response {
+	my ($self, $cache_file, $request) = @_;
+	
+	my $fh;
+	unless (open $fh, '<:raw', $cache_file) {
+		carp "open('$cache_file', 'r'): $!";
+		return;
+	}
+	
+	my $url = <$fh>;
+	$url =~ s/\s+$//;
+	if ($url ne $request->url) {
+		close $fh;
+		return;
+	}
+	
+	local $/ = undef;
+	my $response_str = <$fh>;
+	close $fh;
+	
+	my $response = HTTP::Response->parse($response_str);
+	$response->request($request);
+	
+	if ($self->cookie_jar) {
+		$self->cookie_jar->extract_cookies($response);
+	}
+	
+	return $response;
 }
 
 sub _in($$) {
