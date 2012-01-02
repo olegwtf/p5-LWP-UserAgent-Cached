@@ -49,14 +49,14 @@ sub simple_request {
 		return $self->SUPER::simple_request(@_);
 	}
 	
-	my $request = $_[0]; 
+	my $request = $_[0];
 	eval{ $self->prepare_request($request) };
 	my $fpath = $self->{cache_dir} . '/' . Digest::MD5::md5_hex($request->as_string);
 	my $response;
 	my $no_collision_suffix;
 	
 	if (-e $fpath) {
-		unless ($response = _parse_response($fpath, $request)) {
+		unless ($response = $self->_parse_cached_response($fpath, $request)) {
 			# collision
 			if (my @cache_list = <$fpath-*>) {
 				foreach my $cache_file (@cache_list) {
