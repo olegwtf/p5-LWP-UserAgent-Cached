@@ -1,0 +1,21 @@
+use 5.005000;
+use ExtUtils::MakeMaker;
+# See lib/ExtUtils/MakeMaker.pm for details of how to influence
+# the contents of the Makefile that is written.
+WriteMakefile(
+    NAME              => 'LWP::UserAgent::Cached',
+    LICENSE           => 'perl',
+    VERSION_FROM      => 'lib/LWP/UserAgent/Cached.pm', # finds $VERSION
+    PREREQ_PM         => { 'LWP::UserAgent' => 0 }, # e.g., Module::Name => 1.1
+    META_MERGE        => { 
+	resources => {repository => 'https://github.com/olegwtf/p5-LWP-UserAgent-Cached'},
+	test_requires => {
+		'Test::More' => 0.88,
+		'Test::Mock::LWP::Dispatch' => 0.02,
+		'File::Temp' => 0
+	}
+     },
+    ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
+      (ABSTRACT_FROM  => 'lib/LWP/UserAgent/Cached.pm', # retrieve abstract from module
+       AUTHOR         => 'Oleg G <oleg@cpan.org>') : ()),
+);
