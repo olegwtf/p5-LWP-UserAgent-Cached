@@ -151,3 +151,107 @@ sub _in($$) {
 }
 
 1;
+
+=pod
+
+=head1 NAME
+
+LWP::UserAgent::Cached - LWP::UserAgent with simple caching mechanism
+
+=head1 SYNOPSIS
+
+    use LWP::UserAgent::Cached;
+    
+    my $ua = LWP::UserAgent::Cached->new(cache_dir => '/tmp/lwp-cache');
+    my $resp = $ua->get('http://google.com/'); # makes http request
+    
+    ...
+    
+    $resp = $ua->get('http://google.com/'); # no http request - will get it from the cache
+
+=head1 DESCRIPTION
+
+When you process content from some website, you will get page one by one and extract some data from this
+page with regexp, DOM parser or smth else. Sometimes we makes errors in our data extractors and realize this
+only when all 1_000_000 pages were processed. We should fix our extraction logic and start all process from the
+begin. Please STOP! How about cache? Yes, you can cache all responses and second, third and other attempts will
+be very fast.
+
+LWP::UserAgent::Cached is yet another LWP::UserAgent subclass with cache support. It stores
+cache in the files on local filesystem and if response already available in the cache returns it instead of making HTTP response.
+This module was writed because other available alternatives didn't meet my needs:
+
+=over
+
+=item L<LWP::UserAgent::WithCache>
+
+caches responses on local filesystem and gets it from the cache only if online document was not modified
+
+=item L<LWP::UserAgent::Cache::Memcached>
+
+same as above but stores cache in memory
+
+=item L<LWP::UserAgent::Snapshot>
+
+can record responses in the cache or get responses from the cache, but not both for one useragent
+
+=item L<LWP::UserAgent::OfflineCache>
+
+seems it may cache responses and get responses from the cache, but has too much dependencies and unclear
+`delay' parameter
+
+=back
+
+=head1 METHODS
+
+All LWP::UserAgent methods and few new.
+
+=head2 new(cache_dir => ..., nocache => ..., ...)
+
+Creates new LWP::UserAgent::Cached object. Since LWP::UserAgent::Cached is LWP::UserAgent subclass it has all same
+parameters, but in additional it has some new optional pararmeters:
+
+cache_dir - Path to the directory where cache will be stored. If not set useragent will behaves as LWP::UserAgent without
+cache support.
+
+nocache - Reference to subroutine. First parameter of this subroutine will be HTTP::Response object. This subroutine
+should return true if this response should not be cached and false otherwise. If not set all responses will be cached.
+
+Example:
+
+    use LWP::UserAgent::Cached;
+    
+    my $ua = LWP::UserAgent::Cached->new(cache_dir => 'cache/lwp', nocache => sub {
+        my $response = shift;
+        return $response->code >= 400; # do not cache any bad response
+    });
+
+=head2 cache_dir() or cache_dir($dir)
+
+Gets or sets corresponding option from the constructor.
+
+=head2 nocache() or nocache($sub)
+
+Gets or sets corresponding option from the constructor.
+
+=head2 uncache()
+
+Removes last response from the cache. Use case example:
+
+    my $page = $ua->get($url)->decoded_content;
+    if ($page =~ /Access for this ip was blocked/) {
+        $ua->uncache();
+    }
+
+=head1 SEE ALSO
+
+L<LWP::UserAgent>
+
+=head1 COPYRIGHT
+
+Copyright Oleg G <oleg@cpan.org>.
+
+This library is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+
+=cut
