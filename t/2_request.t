@@ -2,16 +2,30 @@
 
 use strict;
 use Test::More;
-use Test::Mock::LWP::Dispatch;
 use HTTP::Response;
 use HTTP::Request;
 use Digest::MD5;
 use LWP::UserAgent::Cached;
-use File::Temp qw/tempdir/;
+
+eval {
+	require File::Temp;
+	File::Temp->import('tempdir');
+};
+if ($@) {
+	plan skip_all => 'File::Temp not installed';
+}
+
+eval {
+	require Test::Mock::LWP::Dispatch;
+};
+if ($@) {
+	plan skip_all => 'Test::Mock::LWP::Dispatch not installed';
+}
 
 my $cache_dir = eval {
 	tempdir(CLEANUP => 1)
 };
+
 
 unless ($cache_dir) {
 	plan skip_all => "Сan't create temp dir";
