@@ -1,4 +1,8 @@
 Revision history for Perl extension LWP::UserAgent::Cached.
 
+0.02  Wed Jan  4 15:09:00 2012
+      - Makefile.PL fix for tests dependencies
+      - recache callback was added
+
 0.01  Mon Jan 2 21:59:07 2012
       - original version;
