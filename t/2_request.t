@@ -46,6 +46,7 @@ $response->request(HTTP::Request->new(GET => 'http://yahoo.com'));
 $mid = $ua->map('http://yahoo.com', $response);
 my $y_mid = $ua->map('http://www.yahoo.com/', HTTP::Response->new(200, 'Ok', ['Set-Cookie' => 'lwp=true; cached=yes'], 'This is a test'));
 $ua->get('http://yahoo.com'); # make cache
+is(scalar($ua->last_cached), 2, '@last_cached length = 2 on redirect');
 $ua->unmap($mid);
 $ua->cookie_jar->clear();
 my $resp = $ua->get('http://yahoo.com');

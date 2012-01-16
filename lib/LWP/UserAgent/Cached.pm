@@ -123,11 +123,15 @@ sub simple_request {
 	return $response;
 }
 
+sub last_cached {
+	my $self = shift;
+	return exists $self->{last_cached} ?
+		@{$self->{last_cached}} : ();
+}
+
 sub uncache {
 	my $self = shift;
-	if (exists $self->{last_cached}) {
-		unlink $_ for @{$self->{last_cached}};
-	}
+	unlink $_ for $self->last_cached;
 }
 
 sub _parse_cached_response {
@@ -264,6 +268,11 @@ Gets or sets corresponding option from the constructor.
 =head2 recache() or recache($sub)
 
 Gets or sets corresponding option from the constructor.
+
+=head2 last_cached()
+
+Returns list with pathes to files with cache stored by last noncached response. List may contain more than one
+element if there was redirect.
 
 =head2 uncache()
 
