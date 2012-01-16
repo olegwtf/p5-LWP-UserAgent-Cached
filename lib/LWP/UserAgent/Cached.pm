@@ -12,13 +12,13 @@ sub new {
 	my ($class, %opts) = @_;
 	
 	my $cache_dir = delete $opts{cache_dir};
-	my $nocache   = delete $opts{nocache};
-	my $recache   = delete $opts{recache};
+	my $nocache_if   = delete $opts{nocache_if};
+	my $recache_if   = delete $opts{recache_if};
 	my $self = $class->SUPER::new(%opts);
 	
 	$self->{cache_dir} = $cache_dir;
-	$self->{nocache}   = $nocache;
-	$self->{recache}   = $recache;
+	$self->{nocache_if}   = $nocache_if;
+	$self->{recache_if}   = $recache_if;
 	
 	return $self;
 }
@@ -34,26 +34,26 @@ sub cache_dir {
 	return $self->{cache_dir};
 }
 
-sub nocache {
+sub nocache_if {
 	my $self = shift;
 	if (@_) {
-		my $nocache = $self->{nocache};
-		$self->{nocache} = shift;
-		return $nocache;
+		my $nocache_if = $self->{nocache_if};
+		$self->{nocache_if} = shift;
+		return $nocache_if;
 	}
 	
-	return $self->{nocache};
+	return $self->{nocache_if};
 }
 
-sub recache {
+sub recache_if {
 	my $self = shift;
 	if (@_) {
-		my $recache = $self->{recache};
-		$self->{recache} = shift;
-		return $recache;
+		my $recache_if = $self->{recache_if};
+		$self->{recache_if} = shift;
+		return $recache_if;
 	}
 	
-	return $self->{recache};
+	return $self->{recache_if};
 }
 
 sub simple_request {
@@ -88,8 +88,8 @@ sub simple_request {
 			}
 		}
 		
-		if ($response && defined($self->{recache}) && ref($self->{recache}) eq 'CODE' &&
-		    $self->{recache}->($response, $fpath))
+		if ($response && defined($self->{recache_if}) && ref($self->{recache_if}) eq 'CODE' &&
+		    $self->{recache_if}->($response, $fpath))
 		{
 			$response = undef;
 		}
@@ -98,7 +98,7 @@ sub simple_request {
 	unless ($response) {
 		$response = $self->SUPER::simple_request(@_);
 		
-		if (!defined($self->{nocache}) || ref($self->{nocache}) ne 'CODE' || !$self->{nocache}->($response)) {
+		if (!defined($self->{nocache_if}) || ref($self->{nocache_if}) ne 'CODE' || !$self->{nocache_if}->($response)) {
 			if (defined $no_collision_suffix) {
 				$fpath .= $no_collision_suffix;
 			}
@@ -230,7 +230,7 @@ seems it may cache responses and get responses from the cache, but has too much 
 
 All LWP::UserAgent methods and few new.
 
-=head2 new(cache_dir => , nocache => , recache => , ...)
+=head2 new(cache_dir => , nocache_if => , recache_if => , ...)
 
 Creates new LWP::UserAgent::Cached object. Since LWP::UserAgent::Cached is LWP::UserAgent subclass it has all same
 parameters, but in additional it has some new optional pararmeters:
@@ -238,34 +238,34 @@ parameters, but in additional it has some new optional pararmeters:
 cache_dir - Path to the directory where cache will be stored. If not set useragent will behaves as LWP::UserAgent without
 cache support.
 
-nocache - Reference to subroutine. First parameter of this subroutine will be HTTP::Response object. This subroutine
+nocache_if - Reference to subroutine. First parameter of this subroutine will be HTTP::Response object. This subroutine
 should return true if this response should not be cached and false otherwise. If not set all responses will be cached.
 
-recache - Reference to subroutine. First parameter of this subroutine will be HTTP::Response object, second - path to
-file with cache. This subroutine should return true if response needs to be recached (new HTTP request will be made)
+recache_if - Reference to subroutine. First parameter of this subroutine will be HTTP::Response object, second - path to
+file with cache. This subroutine should return true if response needs to be recache_ifd (new HTTP request will be made)
 and false otherwise. This subroutine will be called only if response already available in the cache.
 
 Example:
 
     use LWP::UserAgent::Cached;
     
-    my $ua = LWP::UserAgent::Cached->new(cache_dir => 'cache/lwp', nocache => sub {
+    my $ua = LWP::UserAgent::Cached->new(cache_dir => 'cache/lwp', nocache_if => sub {
         my $response = shift;
         return $response->code >= 500; # do not cache any bad response
-    }, recache => sub {
+    }, recache_if => sub {
         my ($response, $path) = @_;
-        return $response->code == 404 && -M $path > 1 # recache any 404 response older than 1 day
+        return $response->code == 404 && -M $path > 1 # recache_if any 404 response older than 1 day
     });
 
 =head2 cache_dir() or cache_dir($dir)
 
 Gets or sets corresponding option from the constructor.
 
-=head2 nocache() or nocache($sub)
+=head2 nocache_if() or nocache_if($sub)
 
 Gets or sets corresponding option from the constructor.
 
-=head2 recache() or recache($sub)
+=head2 recache_if() or recache_if($sub)
 
 Gets or sets corresponding option from the constructor.
 

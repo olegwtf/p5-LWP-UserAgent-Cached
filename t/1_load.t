@@ -10,20 +10,20 @@ ok(defined $ua, 'new ua');
 isa_ok($ua, 'LWP::UserAgent::Cached');
 isa_ok($ua, 'LWP::UserAgent');
 
-$ua = LWP::UserAgent::Cached->new(cache_dir => '/tmp', nocache => sub{1}, recache => sub{1});
+$ua = LWP::UserAgent::Cached->new(cache_dir => '/tmp', nocache_if => sub{1}, recache_if => sub{1});
 is($ua->cache_dir, '/tmp', 'cache_dir param');
-is(ref($ua->nocache), 'CODE', 'nocache is code');
-is(ref($ua->recache), 'CODE', 'recache is code');
+is(ref($ua->nocache_if), 'CODE', 'nocache_if is code');
+is(ref($ua->recache_if), 'CODE', 'recache_if is code');
 
 $ua->cache_dir('/var/tmp');
 is($ua->cache_dir, '/var/tmp', 'runtime change cache_dir param');
 
-my $old_nocache = $ua->nocache;
-$ua->nocache(sub{0});
-isnt($old_nocache, $ua->nocache, 'runtime change nocache param');
+my $old_nocache_if = $ua->nocache_if;
+$ua->nocache_if(sub{0});
+isnt($old_nocache_if, $ua->nocache_if, 'runtime change nocache_if param');
 
-my $old_recache = $ua->recache;
-$ua->recache(sub{0});
-isnt($old_recache, $ua->recache, 'runtime change recache param');
+my $old_recache_if = $ua->recache_if;
+$ua->recache_if(sub{0});
+isnt($old_recache_if, $ua->recache_if, 'runtime change recache_if param');
 
 done_testing;

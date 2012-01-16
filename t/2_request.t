@@ -54,8 +54,8 @@ is($resp->code, 200, 'Cached response with redirect');
 ok(index($resp->content, 'This is a test')!=-1, 'Cached response content') or diag "Content: ", $resp->content;
 ok($ua->cookie_jar->as_string =~ /^(?=.*?lwp=true).*?cached=yes/, 'Cookies from the cache') or diag "Cookies: ", $ua->cookie_jar->as_string;
 
-# nocache test
-$ua->nocache(sub {
+# nocache_if test
+$ua->nocache_if(sub {
 	$_[0]->code > 399
 });
 $mid = $ua->map('http://perl.org', HTTP::Response->new(403, 'Forbbidden'));
@@ -65,10 +65,10 @@ $ua->map('http://perl.org', HTTP::Response->new(200, 'OK', [], 'Perl there'));
 $resp = $ua->get('http://perl.org');
 is($resp->code, 200, 'Nocache code');
 ok(index($resp->content, 'Perl there')!=-1, 'Nocache content') or diag 'Content: ', $resp->content;
-$ua->nocache(undef);
+$ua->nocache_if(undef);
 
-# recache test
-$ua->recache(sub {
+# recache_if test
+$ua->recache_if(sub {
 	my ($resp, $path) = @_;
 	isa_ok($resp, 'HTTP::Response');
 	ok(-e $path, 'Cached file exists') or diag "Path: $path";
@@ -79,7 +79,7 @@ $ua->get('http://perlmonks.org');
 $ua->unmap($mid);
 $ua->map('http://perlmonks.org', HTTP::Response->new(200));
 is($ua->get('http://perlmonks.org')->code, 200, 'Recached');
-$ua->recache(undef);
+$ua->recache_if(undef);
 
 # uncache test
 $mid = $ua->map('http://metacpan.org', HTTP::Response->new(200));
