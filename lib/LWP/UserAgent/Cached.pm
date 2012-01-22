@@ -6,7 +6,7 @@ use Digest::MD5;
 use HTTP::Response;
 use base 'LWP::UserAgent';
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 sub new {
 	my ($class, %opts) = @_;
@@ -324,7 +324,7 @@ LWP::UserAgent::Cached creation example:
         return $response->code == 404 && -M $path > 1 # recache_if any 404 response older than 1 day
     },
     cachename_spec => {
-        'User-Agent' => undef, # omit agent name
+        'User-Agent' => undef, # omit agent while calculating cache name
     });
 
 =head2 cache_dir() or cache_dir($dir)
