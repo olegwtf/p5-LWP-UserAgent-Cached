@@ -262,7 +262,7 @@ nocache_if - Reference to subroutine. First parameter of this subroutine will be
 should return true if this response should not be cached and false otherwise. If not set all responses will be cached.
 
 recache_if - Reference to subroutine. First parameter of this subroutine will be HTTP::Response object, second - path to
-file with cache. This subroutine should return true if response needs to be recache_ifd (new HTTP request will be made)
+file with cache. This subroutine should return true if response needs to be recached (new HTTP request will be made)
 and false otherwise. This subroutine will be called only if response already available in the cache.
 
 cachename_spec - Hash reference to cache naming specification. In fact cache naming for each request based on request content.
@@ -321,7 +321,7 @@ LWP::UserAgent::Cached creation example:
         return $response->code >= 500; # do not cache any bad response
     }, recache_if => sub {
         my ($response, $path) = @_;
-        return $response->code == 404 && -M $path > 1 # recache_if any 404 response older than 1 day
+        return $response->code == 404 && -M $path > 1 # recache any 404 response older than 1 day
     },
     cachename_spec => {
         'User-Agent' => undef, # omit agent while calculating cache name
