@@ -14,19 +14,21 @@ sub new {
 	my $cache_dir      = delete $opts{cache_dir};
 	my $nocache_if     = delete $opts{nocache_if};
 	my $recache_if     = delete $opts{recache_if};
+	my $on_uncached    = delete $opts{on_uncached};
 	my $cachename_spec = delete $opts{cachename_spec};
 	my $self = $class->SUPER::new(%opts);
 	
 	$self->{cache_dir}      = $cache_dir;
 	$self->{nocache_if}     = $nocache_if;
 	$self->{recache_if}     = $recache_if;
+	$self->{on_uncached}    = $on_uncached;
 	$self->{cachename_spec} = $cachename_spec;
 	
 	return $self;
 }
 
 # generate getters and setters
-foreach my $opt_name (qw(cache_dir nocache_if recache_if cachename_spec)) {
+foreach my $opt_name (qw(cache_dir nocache_if recache_if on_uncached cachename_spec)) {
 	no strict 'refs';
 	*$opt_name = sub {
 		my $self = shift;
@@ -72,17 +74,19 @@ sub simple_request {
 			}
 		}
 		
-		if ($response && defined($self->{recache_if}) && ref($self->{recache_if}) eq 'CODE' &&
-		    $self->{recache_if}->($response, $fpath))
-		{
+		if ($response && defined($self->{recache_if}) && $self->{recache_if}->($response, $fpath)) {
 			$response = undef;
 		}
 	}
 	
 	unless ($response) {
+		if (defined $self->{on_uncached}) {
+			$self->{on_uncached}->($request);
+		}
+		
 		$response = $self->SUPER::simple_request(@_);
 		
-		if (!defined($self->{nocache_if}) || ref($self->{nocache_if}) ne 'CODE' || !$self->{nocache_if}->($response)) {
+		if (!defined($self->{nocache_if}) || !$self->{nocache_if}->($response)) {
 			if (defined $no_collision_suffix) {
 				$fpath .= $no_collision_suffix;
 			}
@@ -265,6 +269,9 @@ recache_if - Reference to subroutine. First parameter of this subroutine will be
 file with cache. This subroutine should return true if response needs to be recached (new HTTP request will be made)
 and false otherwise. This subroutine will be called only if response already available in the cache.
 
+on_uncached - Reference to subroutine. First parameter of this subroutine will be HTTP::Request object. This subroutine will
+be called for each non-cached http request, before actually request.
+
 cachename_spec - Hash reference to cache naming specification. In fact cache naming for each request based on request content.
 Internally it is md5_hex($request->as_string). But what if some of request headers in your program changed dinamically, e.g.
 User-Agent or Cookie? In such case caching will not work properly for you. We need some way to omit this headers when calculating
@@ -321,9 +328,11 @@ LWP::UserAgent::Cached creation example:
         return $response->code >= 500; # do not cache any bad response
     }, recache_if => sub {
         my ($response, $path) = @_;
-        return $response->code == 404 && -M $path > 1 # recache any 404 response older than 1 day
-    },
-    cachename_spec => {
+        return $response->code == 404 && -M $path > 1; # recache any 404 response older than 1 day
+    }, on_uncached => sub {
+        my $request = shift;
+        sleep 5 if $request->uri =~ '/category/\d+'; # delay before http requests inside "/category"
+    }, cachename_spec => {
         'User-Agent' => undef, # omit agent while calculating cache name
     });
 
@@ -336,6 +345,10 @@ Gets or sets corresponding option from the constructor.
 Gets or sets corresponding option from the constructor.
 
 =head2 recache_if() or recache_if($sub)
+
+Gets or sets corresponding option from the constructor.
+
+=head2 on_uncached() or on_uncached($sub)
 
 Gets or sets corresponding option from the constructor.
 

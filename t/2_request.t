@@ -81,6 +81,17 @@ $ua->map('http://perlmonks.org', HTTP::Response->new(200));
 is($ua->get('http://perlmonks.org')->code, 200, 'Recached');
 $ua->recache_if(undef);
 
+# on_uncached test
+$mid = $ua->map('http://www.modernperlbooks.com/', HTTP::Response->new(200));
+my $on_uncached;
+$ua->on_uncached(sub { $on_uncached = 1 });
+$ua->get('http://www.modernperlbooks.com/');
+is($on_uncached, 1, 'on_uncached called');
+$on_uncached = undef;
+$ua->get('http://www.modernperlbooks.com/');
+is($on_uncached, undef, 'on_uncached not called');
+$ua->on_uncached(undef);
+
 # uncache test
 $mid = $ua->map('http://metacpan.org', HTTP::Response->new(200));
 $ua->get('http://metacpan.org');
