@@ -6,7 +6,7 @@ use Digest::MD5;
 use HTTP::Response;
 use base 'LWP::UserAgent';
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 sub new {
 	my ($class, %opts) = @_;

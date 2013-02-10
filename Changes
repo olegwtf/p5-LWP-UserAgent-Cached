@@ -1,5 +1,9 @@
 Revision history for Perl extension LWP::UserAgent::Cached.
 
+0.04  Sun Feb 10 20:28:09 2013
+      - `on_uncached' option added
+      - small documentation fixes
+
 0.03  Sun Jan 22 22:27:45 2012
       - `nocache' renamed to `nocache_if' and `recache' to `recache_if'
       - `last_cached' method added
