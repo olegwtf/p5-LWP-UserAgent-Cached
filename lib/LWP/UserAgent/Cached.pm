@@ -54,6 +54,11 @@ sub simple_request {
 	my $response;
 	my $no_collision_suffix;
 	
+	unless ($self->{was_redirect}) {
+		@{$self->{last_cached}} = ();
+		@{$self->{last_used_cache}} = ();
+	}
+	
 	if (-e $fpath) {
 		unless ($response = $self->_parse_cached_response($fpath, $request)) {
 			# collision
@@ -96,18 +101,19 @@ sub simple_request {
 				print $fh $response->as_string;
 				close $fh;
 				
-				unless ($self->{was_redirect}) {
-					@{$self->{last_cached}} = ();
-				}
 				push @{$self->{last_cached}}, $fpath;
-				$self->{was_redirect} = $response->is_redirect && _in($request->method, $self->requests_redirectable);
+				push @{$self->{last_used_cache}}, $fpath;
 			}
 			else {
 				carp "open('$fpath', 'w'): $!";
 			}
 		}
 	}
+	else {
+		push @{$self->{last_used_cache}}, $fpath;
+	}
 	
+	$self->{was_redirect} = $response->is_redirect && _in($request->method, $self->requests_redirectable);
 	return $response;
 }
 
@@ -115,6 +121,12 @@ sub last_cached {
 	my $self = shift;
 	return exists $self->{last_cached} ?
 		@{$self->{last_cached}} : ();
+}
+
+sub last_used_cache {
+	my $self = shift;
+	return exists $self->{last_used_cache} ?
+		@{$self->{last_used_cache}} : ();
 }
 
 sub uncache {
