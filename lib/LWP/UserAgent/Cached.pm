@@ -16,7 +16,7 @@ sub new {
 	my $recache_if     = delete $opts{recache_if};
 	my $on_uncached    = delete $opts{on_uncached};
 	my $cachename_spec = delete $opts{cachename_spec};
-	my $self = $class->SUPER::new(%opts);
+	my $self = $class->SUPER::new(%opts, parse_head => 0);
 	
 	$self->{cache_dir}      = $cache_dir;
 	$self->{nocache_if}     = $nocache_if;
@@ -40,6 +40,16 @@ foreach my $opt_name (qw(cache_dir nocache_if recache_if on_uncached cachename_s
 		
 		return $self->{$opt_name};
 	}
+}
+
+sub parse_head {
+	my ($self, $bool) = @_;
+	
+	if ($bool) {
+		die "parse_head() is disabled, because it may cause encoding troubles while saving cache";
+	}
+	
+	$self->SUPER::parse_head($bool);
 }
 
 sub simple_request {
