@@ -6,7 +6,7 @@ use Digest::MD5;
 use HTTP::Response;
 use base 'LWP::UserAgent';
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 sub new {
 	my ($class, %opts) = @_;
@@ -382,6 +382,11 @@ Gets or sets corresponding option from the constructor.
 
 Returns list with pathes to files with cache stored by last noncached response. List may contain more than one
 element if there was redirect.
+
+=head2 last_used_cache()
+
+Returns list with pathes to files with cache used in last response. This includes files just stored (last_cached)
+and files that may be already exists (cached earlier). List may contain more than one element if there was redirect.
 
 =head2 uncache()
 
