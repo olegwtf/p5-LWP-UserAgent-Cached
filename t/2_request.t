@@ -72,8 +72,9 @@ $ua->nocache_if(undef);
 
 # recache_if test
 $ua->recache_if(sub {
-	my ($resp, $path) = @_;
+	my ($resp, $path, $req) = @_;
 	isa_ok($resp, 'HTTP::Response');
+	isa_ok($req, 'HTTP::Request');
 	ok(-e $path, 'Cached file exists') or diag "Path: $path";
 	1;
 });

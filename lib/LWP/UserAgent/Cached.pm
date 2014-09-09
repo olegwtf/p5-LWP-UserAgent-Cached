@@ -89,7 +89,7 @@ sub simple_request {
 			}
 		}
 		
-		if ($response && defined($self->{recache_if}) && $self->{recache_if}->($response, $fpath)) {
+		if ($response && defined($self->{recache_if}) && $self->{recache_if}->($response, $fpath, $request)) {
 			$response = undef;
 		}
 	}
