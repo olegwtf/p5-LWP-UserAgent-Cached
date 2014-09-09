@@ -1,5 +1,9 @@
 Revision history for Perl extension LWP::UserAgent::Cached.
 
+0.06  Wed Sep 10 02:38:48 NOVT 2014
+      - additionally pass $request as third argument to `recache_if' callback
+      - documentation improved a little bit
+
 0.05  Sat Jun 28 12:16:14 NOVT 2014
       - `last_used_cache' method added
       - lwp's `parse_head' now always false to prevent problems with encoding for `as_string'
