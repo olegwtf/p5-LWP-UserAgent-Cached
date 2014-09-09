@@ -274,27 +274,66 @@ seems it may cache responses and get responses from the cache, but has too much 
 
 =head1 METHODS
 
-All LWP::UserAgent methods and few new.
+All LWP::UserAgent methods and several new.
 
 =head2 new(...)
 
 Creates new LWP::UserAgent::Cached object. Since LWP::UserAgent::Cached is LWP::UserAgent subclass it has all same
 parameters, but in additional it has some new optional pararmeters:
 
-cache_dir - Path to the directory where cache will be stored. If not set useragent will behaves as LWP::UserAgent without
-cache support.
+L<cache_dir|/"cache_dir() or cache_dir($dir)">
 
-nocache_if - Reference to subroutine. First parameter of this subroutine will be HTTP::Response object. This subroutine
-should return true if this response should not be cached and false otherwise. If not set all responses will be cached.
+L<nocache_if|/"nocache_if() or nocache_if($sub)">
 
-recache_if - Reference to subroutine. First parameter of this subroutine will be HTTP::Response object, second - path to
-file with cache. This subroutine should return true if response needs to be recached (new HTTP request will be made)
-and false otherwise. This subroutine will be called only if response already available in the cache.
+L<recache_if|/"recache_if() or recache_if($sub)">
 
-on_uncached - Reference to subroutine. First parameter of this subroutine will be HTTP::Request object. This subroutine will
-be called for each non-cached http request, before actually request.
+L<on_uncached|/"on_uncached() or on_uncached($sub)">
 
-cachename_spec - Hash reference to cache naming specification. In fact cache naming for each request based on request content.
+L<cachename_spec|/"cachename_spec() or cachename_spec($spec)">
+
+LWP::UserAgent::Cached creation example:
+
+    my $ua = LWP::UserAgent::Cached->new(cache_dir => 'cache/lwp', nocache_if => sub {
+        my $response = shift;
+        return $response->code >= 500; # do not cache any bad response
+    }, recache_if => sub {
+        my ($response, $path, $request) = @_;
+        return $response->code == 404 && -M $path > 1; # recache any 404 response older than 1 day
+    }, on_uncached => sub {
+        my $request = shift;
+        sleep 5 if $request->uri =~ '/category/\d+'; # delay before http requests inside "/category"
+    }, cachename_spec => {
+        'User-Agent' => undef, # omit agent while calculating cache name
+    });
+
+=head2 cache_dir() or cache_dir($dir)
+
+Gets or sets path to the directory where cache will be stored.
+If not set useragent will behaves as LWP::UserAgent without cache support.
+
+=head2 nocache_if() or nocache_if($sub)
+
+Gets or sets reference to subroutine which will be called after receiving each non-cached response. First parameter
+of this subroutine will be HTTP::Response object. This subroutine should return true if this response should
+not be cached and false otherwise. If not set all responses will be cached.
+
+=head2 recache_if() or recache_if($sub)
+
+Gets or sets reference to subroutine which will be called for each response available in the cache. First parameter
+of this subroutine will be HTTP::Response object, second - path to file with cache, third - HTTP::Request object.
+This subroutine should return true if response needs to be recached (new HTTP request will be made) and false otherwise.
+This $sub will be called only if response already available in the cache. Here you can also modify request for your needs.
+This will not change name of the file with cache.
+
+=head2 on_uncached() or on_uncached($sub)
+
+Gets or sets reference to subroutine which will be called for each non-cached http request, before actually request.
+First parameter of this subroutine will be HTTP::Request object. Here you can also modify request for your needs.
+This will not change name of the file with cache.
+
+=head2 cachename_spec() or cachename_spec($spec)
+
+Gets or sets hash reference to cache naming specification. In fact cache naming for each request based on request content.
 Internally it is md5_hex($request->as_string). But what if some of request headers in your program changed dinamically, e.g.
 User-Agent or Cookie? In such case caching will not work properly for you. We need some way to omit this headers when calculating
 cache name. This option is what you need. Specification hash should contain header name and header value which will be used 
@@ -341,43 +380,6 @@ One more example. Calculate cache name based only on method and url:
         _headers => []
     }
 
-LWP::UserAgent::Cached creation example:
-
-    use LWP::UserAgent::Cached;
-    
-    my $ua = LWP::UserAgent::Cached->new(cache_dir => 'cache/lwp', nocache_if => sub {
-        my $response = shift;
-        return $response->code >= 500; # do not cache any bad response
-    }, recache_if => sub {
-        my ($response, $path) = @_;
-        return $response->code == 404 && -M $path > 1; # recache any 404 response older than 1 day
-    }, on_uncached => sub {
-        my $request = shift;
-        sleep 5 if $request->uri =~ '/category/\d+'; # delay before http requests inside "/category"
-    }, cachename_spec => {
-        'User-Agent' => undef, # omit agent while calculating cache name
-    });
-
-=head2 cache_dir() or cache_dir($dir)
-
-Gets or sets corresponding option from the constructor.
-
-=head2 nocache_if() or nocache_if($sub)
-
-Gets or sets corresponding option from the constructor.
-
-=head2 recache_if() or recache_if($sub)
-
-Gets or sets corresponding option from the constructor.
-
-=head2 on_uncached() or on_uncached($sub)
-
-Gets or sets corresponding option from the constructor.
-
-=head2 cachename_spec() or cachename_spec($spec)
-
-Gets or sets corresponding option from the constructor.
-
 =head2 last_cached()
 
 Returns list with pathes to files with cache stored by last noncached response. List may contain more than one
@@ -396,6 +398,37 @@ Removes last response from the cache. Use case example:
     if ($page =~ /Access for this ip was blocked/) {
         $ua->uncache();
     }
+
+=head1 Proxy and cache name
+
+Here you can see how changing of proxy for useragent will affect cache name
+
+=head2 HTTP proxy
+
+HTTP proxy support works out of the box and causes no problems. Changing of proxy server will not affect cache name
+
+=head2 HTTPS proxy
+
+Proper HTTPS proxy support added in LWP since 6.06 and causes no problems. Changing of proxy server will not affect cache name
+
+=head2 CONNECT proxy
+
+CONNECT proxy support may be added using L<LWP::Protocol::connect|LWP::Protocol::connect>. The problem is that this module uses
+LWP's request() for creation of CONNECT tunnel, so this response will be cached. But in fact it shouldn't. To workaround this
+you need to install C<nocache_if> hook
+
+    $ua->nocache_if(sub {
+        my $resp = shift;
+        # do not cache creation of tunnel
+        $resp->request->method eq 'CONNECT';
+    });
+
+After that it works without problems. Changing of proxy server will not affect cache name
+
+=head2 SOCKS proxy
+
+SOCKS proxy support may be added using L<LWP::Protocol::socks|LWP::Protocol::socks> and causes no problems.
+Changing of proxy server will not affect cache name
 
 =head1 SEE ALSO
 
