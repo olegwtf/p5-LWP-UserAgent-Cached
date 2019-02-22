@@ -108,7 +108,7 @@ sub simple_request {
 			
 			if (open my $fh, '>:raw', $fpath) {
 				print $fh $request->url, "\n";
-				print $fh $response->as_string;
+				print $fh $response->as_string("\n");
 				close $fh;
 				
 				push @{$self->{last_cached}}, $fpath;
