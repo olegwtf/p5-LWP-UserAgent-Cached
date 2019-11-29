@@ -72,7 +72,7 @@ is($cookies[0], 'cached=yes', 'Got correct first cookie');
 is($cookies[1], 'lwp=true', 'Got correct second cookie');
 is(scalar($ua->last_cached), 0, '@last_cached length = 0 when get from cache');
 is(scalar($ua->last_used_cache), 2, '@last_used_cache length = 2 when get from cache');
-# cookie bug (#gh5)
+# cookies bug (#gh5)
 $resp = $ua->get('http://www.yahoo.com/');
 is(() = $resp->request->header('Cookie') =~ /lwp=true/g, 1, 'correct cookie 1 sent in the request');
 is(() = $resp->request->header('Cookie') =~ /cached=yes/g, 1, 'correct cookie 2 sent in the request');
